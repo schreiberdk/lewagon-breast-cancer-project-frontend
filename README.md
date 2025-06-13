@@ -1,5 +1,5 @@
 # LeWagon Breast Cancer detection full-stack project
-## Back-end repository
+## Front-end repository
 
 ### Contributors:
 * schreiberdk - project lead
