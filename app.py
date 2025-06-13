@@ -3,8 +3,11 @@ import streamlit as st
 import requests
 
 # Load API base URI from secrets or environment
-api_key = os.environ.get('API_URI', 'cloud_api_uri')
-BASE_URI = st.secrets.get(api_key)
+if 'API_URI' in os.environ:
+    BASE_URI = st.secrets[os.environ.get('API_URI')]
+else:
+    BASE_URI = st.secrets['cloud_api_uri']
+
 BASE_URI = BASE_URI if BASE_URI.endswith('/') else BASE_URI + '/'
 
 st.title("Medical Imaging AI App 🧠")
@@ -40,7 +43,7 @@ if uploaded_file and task:
         if task == "Classification":
             try:
                 result = response.json()
-                prob = result.get("Probability of Malignant Breast Cancer")
+                prob = result.get("probability")
 
                 if prob is None:
                     st.error("✅ API returned successfully, but no probability was found in the response.")
