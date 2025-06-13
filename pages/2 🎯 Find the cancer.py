@@ -8,6 +8,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
+st.set_page_config(
+    page_title="Find the cancer",
+    page_icon=":dart:",
+)
+
 # --- Helper: Convert PIL image to base64-encoded data URI ---
 def image_to_data_url(img: Image.Image) -> str:
     buf = io.BytesIO()
@@ -16,7 +21,7 @@ def image_to_data_url(img: Image.Image) -> str:
     return f"data:image/png;base64,{base64_str}"
 
 # --- Load files ---
-st.title("🖌️ Draw Your Own Cancer Mask")
+st.markdown("## Can you find the cancer in the image?")
 
 # --- List available image files ---
 image_files = sorted(glob.glob("images/*.png"))  # or .jpg, etc.
@@ -29,7 +34,7 @@ if not image_files:
 image_names = [os.path.basename(path) for path in image_files]
 
 # Dropdown to select image
-selected_image_name = st.selectbox("Select an image to annotate", image_names)
+selected_image_name = st.selectbox("Select an image", image_names)
 
 # Build paths for selected image and corresponding mask
 selected_image_path = os.path.join("images", selected_image_name)
@@ -48,7 +53,7 @@ mask_gt = Image.open(selected_mask_path).convert("L").resize((512, 512))
 bg_image_url = image_to_data_url(image.convert("RGB"))
 
 # --- Drawing canvas ---
-st.subheader("1️⃣ Draw your cancer mask on the mammogram:")
+st.markdown("### Can you find the cancer? Draw on the image:")
 canvas_result = st_canvas(
     fill_color="rgba(255, 0, 0, 0.4)",
     stroke_width=5,
@@ -94,7 +99,7 @@ def overlay_mask_on_image(image_pil, mask_np, mask_color=(255, 0, 0, 100)):
 
 
 # --- Process drawn mask ---
-if st.button("Submit Mask"):
+if st.button("Submit"):
     if canvas_result.image_data is not None:
         alpha_channel = canvas_result.image_data[:, :, 3]
         if np.any(alpha_channel > 0):
@@ -111,7 +116,7 @@ if st.button("Submit Mask"):
             union = np.logical_or(user_mask, mask_gt_bin).sum()
             iou = intersection / union if union != 0 else 0.0
 
-            st.subheader(f"2️⃣ IOU Score: **{iou:.2f}**")
+            st.subheader(f"🎯 Target Score: **{iou*100:.0f}%**")
 
             # Overlay masks on mammogram
             user_overlay = overlay_mask_on_image(image, user_mask)
@@ -119,8 +124,8 @@ if st.button("Submit Mask"):
 
             col1, col2 = st.columns(2)
             with col1:
-                st.image(user_overlay, caption="🖌️ Your Mask Overlay", use_column_width=True)
+                st.image(user_overlay, caption="Your prediction", use_container_width=True)
             with col2:
-                st.image(gt_overlay, caption="📌 Ground Truth Mask Overlay", use_column_width=True)
+                st.image(gt_overlay, caption="Radiologist diagnosis", use_container_width=True)
     else:
         st.error("Please draw a mask before submitting.")
