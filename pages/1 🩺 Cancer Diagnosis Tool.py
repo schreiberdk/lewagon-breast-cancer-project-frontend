@@ -2,6 +2,11 @@ import os
 import streamlit as st
 import requests
 
+st.set_page_config(
+    page_title="Cancer Diagnosis Tool",
+    page_icon=":stethoscope:",
+)
+
 # Load API base URI from secrets or environment
 if 'API_URI' in os.environ:
     BASE_URI = st.secrets[os.environ.get('API_URI')]
@@ -10,22 +15,22 @@ else:
 
 BASE_URI = BASE_URI if BASE_URI.endswith('/') else BASE_URI + '/'
 
-st.title("Medical Imaging AI App 🧠")
-st.markdown(f"Backend: `{BASE_URI}`")
+st.markdown("## B.O.O.B.S. Deep Learning Suite 🍈🍈")
+#st.markdown(f"Backend: `{BASE_URI}`")
 
-st.markdown("Upload a medical image and select a task (classification or segmentation).")
+st.markdown("Upload a medical image and select a task")
 
 # Upload image
-uploaded_file = st.file_uploader("Upload an image (PNG/JPG)", type=['png', 'jpg', 'jpeg'])
+uploaded_file = st.file_uploader("Upload an image (PNG/JPG format)", type=['png', 'jpg', 'jpeg'])
 
 # Task selection
-task = st.selectbox("Select a task", ["Classification", "Segmentation"])
+task = st.selectbox("Select a task", ["Is there cancer?", "Where is the cancer?"])
 
 if uploaded_file and task:
-    endpoint = "classification" if task == "Classification" else "segmentation"
+    endpoint = "classification" if task == "Is there cancer?" else "segmentation"
     url = BASE_URI + endpoint
 
-    st.markdown(f"**Sending request to:** `{url}`")
+    #st.markdown(f"**Sending request to:** `{url}`")
 
     with st.spinner("Processing..."):
         try:
@@ -40,10 +45,10 @@ if uploaded_file and task:
             st.stop()
 
         # ✅ Classification result
-        if task == "Classification":
+        if task == "Is there cancer?":
             try:
                 result = response.json()
-                prob = result.get("probability")
+                prob = float(result.get("probability"))
 
                 if prob is None:
                     st.error("✅ API returned successfully, but no probability was found in the response.")
@@ -55,5 +60,8 @@ if uploaded_file and task:
                 st.write("Raw response content:", response.text)
 
         # ✅ Segmentation result (image)
-        elif task == "Segmentation":
-            st.image(response.content, caption="🩺 Segmentation Output", use_column_width=True)
+        elif task == "Where is the cancer?":
+            st.markdown(
+            "🔴 **Red areas** on the mammogram represent the regions predicted by the segmentation model as potentially cancerous."
+            )
+            st.image(response.content, caption="🩺 Segmentation Output", use_container_width=True)
