@@ -7,6 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
+import requests
 
 st.set_page_config(
     page_title="Find the cancer",
@@ -49,14 +50,15 @@ if not os.path.exists(selected_image_path) or not os.path.exists(selected_mask_p
 image = Image.open(selected_image_path).resize((512, 512))
 mask_gt = Image.open(selected_mask_path).convert("L").resize((512, 512))
 
+st.markdown("### Can you find the cancer? Draw on the image:")
+
 # Convert image to data URI
 bg_image_url = image_to_data_url(image.convert("RGB"))
 
 # --- Drawing canvas ---
-st.markdown("### Can you find the cancer? Draw on the image:")
 canvas_result = st_canvas(
-    fill_color="rgba(255, 0, 0, 0.4)",
-    stroke_width=5,
+    fill_color="#EEE0E0",
+    stroke_width=6,
     stroke_color="#FF0000",
     background_image=image.convert("RGBA"),
     update_streamlit=True,
@@ -98,16 +100,14 @@ def overlay_mask_on_image(image_pil, mask_np, mask_color=(255, 0, 0, 100)):
 
 
 
-# --- Process drawn mask ---
 if st.button("Submit"):
     if canvas_result.image_data is not None:
         alpha_channel = canvas_result.image_data[:, :, 3]
         if np.any(alpha_channel > 0):
-            # Proceed with processing user mask
             user_mask = canvas_result.image_data[:, :, 3] > 0
             user_mask = user_mask.astype(np.uint8)
 
-            # Prepare ground truth mask binary array
+            # Ground truth binary mask
             mask_gt_np = np.array(mask_gt)
             mask_gt_bin = (mask_gt_np > 127).astype(np.uint8)
 
@@ -118,14 +118,101 @@ if st.button("Submit"):
 
             st.subheader(f"🎯 Target Score: **{iou*100:.0f}%**")
 
-            # Overlay masks on mammogram
+            # User and GT overlays
             user_overlay = overlay_mask_on_image(image, user_mask)
             gt_overlay = overlay_mask_on_image(image, mask_gt_bin)
 
             col1, col2 = st.columns(2)
             with col1:
-                st.image(user_overlay, caption="Your prediction", use_container_width=True)
+                st.image(user_overlay, caption="👩‍💻 Your prediction", use_container_width=True)
             with col2:
-                st.image(gt_overlay, caption="Radiologist diagnosis", use_container_width=True)
-    else:
-        st.error("Please draw a mask before submitting.")
+                st.image(gt_overlay, caption="👩‍⚕️ Radiologist diagnosis", use_container_width=True)
+
+            # --- Call your segmentation API ---
+            try:
+                col1, col2, col3  = st.columns([1, 3, 1])  # Two equal-width columns
+                with col2:
+                    api_uri = st.secrets.get("cloud_api_uri", os.environ.get("API_URI"))
+                    endpoint = "segmentation"
+                    url = api_uri.rstrip("/") + "/" + endpoint
+
+                    with open(selected_image_path, "rb") as f:
+                        files = {'img': f}
+                        with st.spinner("Sending to segmentation model..."):
+                            response = requests.post(url, files=files)
+
+                    if response.status_code == 200:
+                        model_mask_img = Image.open(io.BytesIO(response.content)).resize((512, 512))
+                        st.image(model_mask_img, caption="🤖 Model prediction", use_container_width=True)
+                    else:
+                        st.warning(f"Model API failed: {response.status_code} — {response.text}")
+
+            except Exception as e:
+                st.error(f"Failed to contact model API: {e}")
+
+        else:
+            st.error("Please draw a mask before submitting.")
+
+st.markdown("""
+    <style>
+    /* Set background color for entire page */
+    .stApp {
+        background-color: #EEE0E0;
+        color: #545454;  /* default text color */
+        font-family: 'Malik', sans-serif;  /* change font */
+    }
+
+    /* Optional: style headings */
+    h1, h2, h3, h4, h5, h6 {
+        color: #635088;  /* dark blue headings */
+    }
+
+    /* Sidebar container */
+    section[data-testid="stSidebar"] {
+        color: #545454;              /* Text color */
+        background-color: #EEE0E0;   /* Optional: change sidebar background */
+    }
+
+    /* Make sure links and other text are also white */
+    section[data-testid="stSidebar"] * {
+        color: #545454 !important;
+    }
+
+    /* Optional: change default font size */
+    html, body, [class*="css"] {
+         font-size: 16px;
+    }
+
+    /* Change background color of the top bar */
+    header[data-testid="stHeader"] {
+        background-color: #EEE0E0;  /* Replace with your preferred color */
+        color: #545454;
+    }
+
+    /* Optional: change the menu text color */
+    header[data-testid="stHeader"] * {
+        color: #545454; !important;
+    }
+
+    /* Style the Submit button */
+    div.stButton > button {
+        background-color: #635088;     /* Button background */
+        color: #FFFFFF;                /* Text color */
+        border: 3px solid #443366;     /* Border color */
+        border-radius: 6px;            /* Optional: rounded corners */
+        padding: 0.5em 1.5em;          /* Optional: padding */
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+
+    /* Optional: style on hover */
+    div.stButton > button:hover {
+        background-color: #7a69a0;
+        border-color: #32254e;
+        color: #ffffff;
+    }
+
+
+
+    </style>
+""", unsafe_allow_html=True)
