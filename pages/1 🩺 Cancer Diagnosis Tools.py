@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 
 st.set_page_config(
-    page_title="Cancer Diagnosis Tool",
+    page_title="Cancer Diagnosis Tools",
     page_icon=":stethoscope:",
 )
 
@@ -15,7 +15,7 @@ else:
 
 BASE_URI = BASE_URI if BASE_URI.endswith('/') else BASE_URI + '/'
 
-st.markdown("## B.O.O.B.S. Deep Learning Suite 🍈🍈")
+st.markdown("## Cancer Diagnosis Tools")
 #st.markdown(f"Backend: `{BASE_URI}`")
 
 st.markdown("Upload a medical image and select a task")

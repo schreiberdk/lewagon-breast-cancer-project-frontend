@@ -22,7 +22,7 @@ def image_to_data_url(img: Image.Image) -> str:
     return f"data:image/png;base64,{base64_str}"
 
 # --- Load files ---
-st.markdown("## Can you find the cancer in the image?")
+st.markdown("## Find the cancer")
 
 # --- List available image files ---
 image_files = sorted(glob.glob("images/*.png"))  # or .jpg, etc.

@@ -26,10 +26,10 @@ test_structure:
 streamlit: streamlit_local
 
 streamlit_local:
-	-@API_URI=local_api_uri streamlit run 🧉_Home.py
+	-@API_URI=local_api_uri streamlit run Home.py
 
 streamlit_local_docker:
-	-@API_URI=local_docker_uri streamlit run 🧉_Home.py
+	-@API_URI=local_docker_uri streamlit run Home.py
 
 streamlit_cloud:
-	-@API_URI=cloud_api_uri streamlit run 🧉_Home.py
+	-@API_URI=cloud_api_uri streamlit run Home.py
